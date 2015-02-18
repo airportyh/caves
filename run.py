@@ -1,4 +1,30 @@
 import xlrd
+import re
+
+def parse_numbers(s):
+  numbers = []
+  for part in re.split('[,./ ]', s):
+    part = part.strip()
+    if part == '':
+      continue
+    m = re.search('-', part)
+    if m is not None:
+      start_range = int(part[0:m.start()])
+      end_range = int(part[m.start()+1:len(part)])
+      i = start_range
+      while i <= end_range:
+        numbers.append(i)
+    else:
+      numbers.append(int(part))
+  return numbers
+
+def all_numbers(lst):
+  if type(lst) != list:
+    return False
+  for n in lst:
+    if type(n) != int:
+      return False
+  return True
 
 book = xlrd.open_workbook('cloister caves.xls')
 sheet = book.sheet_by_index(0)
@@ -32,14 +58,13 @@ for artifact in artifacts:
     cell = sheet.cell(artifact['row_idx'], location['col_idx'])
     if cell.ctype != xlrd.XL_CELL_EMPTY:
       if cell.ctype == xlrd.XL_CELL_NUMBER:
-        numbers = str(cell.value)
+        numbers = "{:0.0f}".format(cell.value)
       else:
-        try:
-          numbers = cell.value.replace('\xef\xbc\x8c', ',')
-        except UnicodeDecodeError, e:
-          print "Cant replace", cell.value
-          print repr(cell.value)
-          raise e
+        numbers = cell.value
+        numbers = numbers.replace(u'\xef\xbc\x8c', u',')
+        numbers = numbers.replace(u'\uff0c', u',')
+      numbers = parse_numbers(numbers)
+      assert all_numbers(numbers)
       print "These caves have a", artifact['name'], "in in the", location['name'], ":", numbers
       
       
