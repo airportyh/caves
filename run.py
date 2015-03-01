@@ -12,11 +12,10 @@ def parse_numbers(s):
     if m is not None:
       start_range = int(part[0:m.start()])
       end_range = int(part[m.start()+1:len(part)])
-      i = start_range
-      while i <= end_range:
-        numbers.append(i)
+      for i in xrange(start_range, end_range):
+        numbers.append(unicode(i))
     else:
-      numbers.append(int(part))
+      numbers.append(unicode(part))
   return numbers
 
 def cave_numbers_for_cell(cell):
@@ -28,16 +27,16 @@ def cave_numbers_for_cell(cell):
       numbers = numbers.replace(u'\xef\xbc\x8c', u',')
       numbers = numbers.replace(u'\uff0c', u',')
     numbers = parse_numbers(numbers)
-    assert has_all_numbers(numbers)
+    assert has_all_unicodes(numbers)
     return numbers
   else:
     return []
 
-def has_all_numbers(lst):
+def has_all_unicodes(lst):
   if type(lst) != list:
     return False
   for n in lst:
-    if type(n) != int:
+    if type(n) != unicode:
       return False
   return True
 
@@ -45,42 +44,76 @@ if len(sys.argv) < 2:
   print "Usage: python run.py <excel file>"
   sys.exit()
 
+def read_locations(sheet, ncols):
+  locations = []
+  col_offset = 2
+  for idx in xrange(col_offset, ncols):
+    name = sheet.cell(0, idx).value
+    locations.append({
+      'name': name,
+      'col_idx': idx
+    })
+  return locations
+
+def is_icon_type_header(cell, xf_list):
+  return xf_list[cell.xf_index].border.bottom_line_style == 6
+
+def read_icons(sheet, nrows, xf_list):
+  icons = []
+  icon_types = []
+  row_offset = 3
+  current_icon_type = None
+  for idx in xrange(row_offset, nrows):
+    cell = sheet.cell(idx, 0)
+    if is_icon_type_header(cell, xf_list):
+      current_icon_type = {
+        'name': cell.value.strip(),
+        'chinese_name': sheet.cell(idx, 1).value.strip()
+      }
+      icon_types.append(current_icon_type)
+    else:
+      icon_name = cell.value
+      icon_chinese_name = sheet.cell(idx, 1).value
+      icons.append({
+        'name': icon_name,
+        'chinese_name': icon_chinese_name,
+        'icon_type': current_icon_type,
+        'row_idx': idx
+      })
+  return icons, icon_types
+
 def read_file(filename):
+  # open first time just to get ncols and nrows wo formatting info
+  book = xlrd.open_workbook(filename)
+  sheet = book.sheet_by_index(0)
+  ncols = sheet.ncols
+  nrows = sheet.nrows
+
+  # reopen to get format info
   book = xlrd.open_workbook(filename, formatting_info=True)
   sheet = book.sheet_by_index(0)
   
-  col_offset = 2
   caves = set()
   locations = []
-  artifacts = []
+  icons = []
+  icon_types = []
   sitings = []
 
-  for i in xrange(15):
-    name = sheet.cell(0, col_offset + i).value
-    locations.append({
-      'id': i,
-      'name': name,
-      'col_idx': col_offset + i
-    })
+  locations = read_locations(sheet, ncols)
+  print 'num locations:', len(locations)
 
-  row_offset = 3
-  for i in xrange(176):
-    artifact_name = sheet.cell(row_offset + i, 0)
-    artifact_chinese_name = sheet.cell(row_offset + i, 1)
-    artifacts.append({
-      'id': i,
-      'name': artifact_name.value,
-      'chinese_name': artifact_chinese_name.value,
-      'row_idx': row_offset + i
-    })
+  icons, icon_types = read_icons(sheet, nrows, book.xf_list)
+  print 'num icons:', icons
+  print 'icon types:', icon_types
 
-  for artifact in artifacts:
+  for artifact in icons:
     for location in locations:
       cell = sheet.cell(artifact['row_idx'], location['col_idx'])
       cave_numbers = cave_numbers_for_cell(cell)
       for cave in cave_numbers:
         caves.add(cave)
         
+  print 'num caves:', len(caves)
   print caves
 
 filename = sys.argv[1]
