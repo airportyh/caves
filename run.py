@@ -44,16 +44,16 @@ if len(sys.argv) < 2:
   print "Usage: python run.py <excel file>"
   sys.exit()
 
-def read_locations(sheet, ncols):
-  locations = []
+def read_architectures(sheet, ncols):
+  archs = []
   col_offset = 2
   for idx in xrange(col_offset, ncols):
     name = sheet.cell(0, idx).value
-    locations.append({
+    archs.append({
       'name': name,
       'col_idx': idx
     })
-  return locations
+  return archs
 
 def is_icon_type_header(cell, xf_list):
   return xf_list[cell.xf_index].border.bottom_line_style == 6
@@ -94,21 +94,18 @@ def read_file(filename):
   sheet = book.sheet_by_index(0)
   
   caves = set()
-  locations = []
-  icons = []
-  icon_types = []
   sitings = []
 
-  locations = read_locations(sheet, ncols)
-  print 'num locations:', len(locations)
+  architectures = read_architectures(sheet, ncols)
+  print 'num architectures:', len(architectures)
 
   icons, icon_types = read_icons(sheet, nrows, book.xf_list)
   print 'num icons:', icons
   print 'icon types:', icon_types
 
   for artifact in icons:
-    for location in locations:
-      cell = sheet.cell(artifact['row_idx'], location['col_idx'])
+    for arch in architectures:
+      cell = sheet.cell(artifact['row_idx'], arch['col_idx'])
       cave_numbers = cave_numbers_for_cell(cell)
       for cave in cave_numbers:
         caves.add(cave)
