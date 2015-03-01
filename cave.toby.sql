@@ -31,5 +31,6 @@ CREATE TABLE siting (
   id SERIAL,  -- added id for siting (SERIAL is an INTEGER file tha automatically increments)
   cave_id INTEGER, 
   icon_id INTEGER, 
+              -- moved type_if from here to cave.cave_type_id
   architecture_id INTEGER
 );
