@@ -164,7 +164,7 @@ def main():
   all_icon_types = {}
   all_sitings = []
   for cave_type in cave_types:
-    filename = cave_type['filename']
+    filename = 'excel_files/' + cave_type['filename']
     print "Opening", filename
     caves, icons, icon_types, architectures, sitings = read_file(filename)
     for cave in caves:
@@ -186,7 +186,7 @@ def main():
 
   for icon in all_icons.values():
     icon['icon_type'] = all_icon_types[icon['icon_type_name']]
-    
+
   for siting in all_sitings:
     cave = all_caves[siting['cave_number']]
     icon = all_icons[siting['icon']]
